@@ -21,13 +21,13 @@ services:
 
   # ── Backend FastAPI ───────────────────────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/empresas-backend:latest
     container_name: empresas_backend
     restart: always
     environment:
       DATABASE_URL: postgresql://postgres:root@db:5432/empresas_db
+      GH_CLIENT_ID: ${GH_CLIENT_ID}
+      GH_CLIENT_SECRET: ${GH_CLIENT_SECRET}
     ports:
       - "8000:8000"
     depends_on:
@@ -36,9 +36,7 @@ services:
 
   # ── Frontend Vue 3 ────────────────────────────────────────────────────────
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/empresas-frontend:latest
     container_name: empresas_frontend
     restart: always
     ports:
