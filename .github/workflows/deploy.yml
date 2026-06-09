@@ -13,17 +13,21 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
+      - name: Configurar chave SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy no servidor via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /root/app
-            git pull origin main
-            echo "GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" > .env.production
-            echo "GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}" >> .env.production
-            docker compose down
-            docker compose up --build -d
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /root/app &&
+            git pull origin main &&
+            echo 'GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}' > .env.production &&
+            echo 'GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}' >> .env.production &&
+            docker compose down &&
+            docker compose up --build -d &&
             docker system prune -f
+          "
