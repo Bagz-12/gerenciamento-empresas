@@ -1,0 +1,29 @@
+name: CI/CD Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Deploy no servidor via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/app
+            git pull origin main
+            echo "GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" > .env.production
+            echo "GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}" >> .env.production
+            docker compose down
+            docker compose up --build -d
+            docker system prune -f

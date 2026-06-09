@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import db_config, Base
-from app.routers import empresas, socios
+from app.routers import empresas, socios, auth
 
 
 class Application:
@@ -38,6 +38,7 @@ class Application:
         """Registra todos os routers da aplicação."""
         self._app.include_router(empresas.router)
         self._app.include_router(socios.router)
+        self._app.include_router(auth.router)
 
         @self._app.get("/", tags=["Root"])
         def root():
