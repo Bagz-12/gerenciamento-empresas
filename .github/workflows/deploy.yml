@@ -13,17 +13,12 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Decodificar chave SSH
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
-
       - name: Deploy no servidor via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key_path: /tmp/ssh_key
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/app
             git pull origin main
