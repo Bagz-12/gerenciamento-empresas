@@ -63,6 +63,7 @@ jobs:
             echo 'GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}' >> .env &&
             echo 'GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}' >> .env &&
             echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> .env &&
+            echo 'GITHUB_REDIRECT_URI=${{ secrets.GH_REDIRECT_URI }}' >> .env &&
             docker compose pull &&
             docker compose up -d &&
             docker system prune -f
