@@ -59,6 +59,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             cd /root/app &&
+            git pull origin main &&
             echo 'DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}' > .env &&
             echo 'GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}' >> .env &&
             echo 'GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}' >> .env &&
