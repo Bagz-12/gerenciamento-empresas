@@ -37,6 +37,8 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=http://137.184.56.103:8000
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/empresas-frontend:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/empresas-frontend:latest
