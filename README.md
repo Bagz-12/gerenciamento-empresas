@@ -1,37 +1,74 @@
 # Sistema de Gerenciamento de Empresas
 
 API RESTful com **FastAPI + PostgreSQL** e frontend em **Vue 3**.  
-Desenvolvido com **Programação Orientada a Objetos** em toda a stack.
+Deploy automatizado com **Docker + GitHub Actions + Docker Hub + DigitalOcean**.
+
+---
+
+## Arquitetura de Deploy
+
+```
+Push no GitHub (main)
+        ↓
+GitHub Actions
+        ↓
+Build das imagens Docker (backend + frontend)
+        ↓
+Push para Docker Hub (registry de imagens)
+        ↓
+SSH no servidor DigitalOcean
+        ↓
+docker compose pull + up (containers sobem com as novas imagens)
+```
+
+---
+
+## Tecnologias Utilizadas
+
+| Camada | Tecnologia |
+|--------|-----------|
+| **Backend** | Python 3.13 + FastAPI |
+| **Frontend** | Vue 3 + Vite + Nginx |
+| **Banco de Dados** | PostgreSQL 16 |
+| **Autenticação** | GitHub OAuth |
+| **Containers** | Docker + Docker Compose |
+| **Registry** | Docker Hub |
+| **CI/CD** | GitHub Actions |
+| **Cloud** | DigitalOcean (Droplet + Managed Database) |
 
 ---
 
 ## Estrutura do Projeto
 
 ```
-trabalho python/
+gerenciamento-empresas/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # Pipeline CI/CD
 ├── backend/
-│   ├── main.py                        # Classe Application (entry point)
+│   ├── main.py                 # Classe Application (entry point)
+│   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── .env.example
 │   └── app/
-│       ├── database.py                # Classe DatabaseConfig (Singleton)
-│       ├── models.py                  # Classes Empresa e Socio (SQLAlchemy ORM)
-│       ├── schemas.py                 # Classes Pydantic (validação de dados)
+│       ├── database.py         # Classe DatabaseConfig (Singleton)
+│       ├── models.py           # Classes Empresa e Socio (SQLAlchemy ORM)
+│       ├── schemas.py          # Classes Pydantic (validação de dados)
 │       ├── utils/
-│       │   └── cnpj.py                # Classe CnpjValidator
+│       │   └── cnpj.py         # Classe CnpjValidator
 │       ├── repositories/
-│       │   ├── base_repository.py     # Classe abstrata BaseRepository (genérica)
+│       │   ├── base_repository.py     # Classe abstrata BaseRepository
 │       │   ├── empresa_repository.py  # Classe EmpresaRepository
 │       │   └── socio_repository.py    # Classe SocioRepository
 │       ├── services/
-│       │   ├── empresa_service.py     # Classe EmpresaService (regras de negócio)
+│       │   ├── empresa_service.py     # Classe EmpresaService
 │       │   └── socio_service.py       # Classe SocioService
 │       └── routers/
-│           ├── empresas.py            # Rotas CRUD de Empresas
-│           └── socios.py              # Rotas CRUD de Sócios
+│           ├── auth.py         # Autenticação GitHub OAuth
+│           ├── empresas.py     # Rotas CRUD de Empresas
+│           └── socios.py       # Rotas CRUD de Sócios
 └── frontend/
-    ├── index.html
-    ├── vite.config.js
+    ├── Dockerfile
+    ├── nginx.conf
     ├── package.json
     └── src/
         ├── main.js
@@ -39,65 +76,65 @@ trabalho python/
         ├── router/index.js
         ├── assets/styles.css
         ├── utils/
-        │   └── cnpj.js                # Classe CnpjUtil (validação no frontend)
+        │   ├── cnpj.js         # Validação de CNPJ no frontend
+        │   └── cpf.js          # Validação de CPF no frontend
         ├── services/
-        │   ├── ApiClient.js           # Classe base ApiClient
-        │   ├── EmpresaService.js      # Classe EmpresaService (herda ApiClient)
-        │   └── SocioService.js        # Classe SocioService (herda ApiClient)
+        │   ├── ApiClient.js    # Classe base ApiClient
+        │   ├── EmpresaService.js
+        │   └── SocioService.js
         ├── views/
-        │   ├── EmpresaListView.vue    # Lista com barra de busca
-        │   ├── EmpresaFormView.vue    # Formulário criar/editar
-        │   └── EmpresaDetailView.vue  # Detalhes + gerenciar sócios
+        │   ├── EmpresaListView.vue
+        │   ├── EmpresaFormView.vue
+        │   └── EmpresaDetailView.vue
         └── components/
             └── ConfirmModal.vue
 ```
 
 ---
 
-## Como Executar
+## Pipeline CI/CD
+
+O pipeline é disparado automaticamente a cada push na branch `main` e executa dois jobs:
+
+**Job 1 — Build & Push**
+- Faz o build das imagens Docker do backend e frontend
+- Publica as imagens no Docker Hub com a tag do commit e `latest`
+
+**Job 2 — Deploy**
+- Conecta no servidor via SSH
+- Puxa as novas imagens do Docker Hub
+- Reinicia os containers com `docker compose up -d`
+
+### Secrets necessários no GitHub
+
+| Secret | Descrição |
+|--------|-----------|
+| `DOCKER_USERNAME` | Usuário do Docker Hub |
+| `DOCKER_PASSWORD` | Token de acesso do Docker Hub |
+| `SSH_HOST` | IP do servidor DigitalOcean |
+| `SSH_USER` | Usuário SSH (ex: root) |
+| `SSH_PRIVATE_KEY` | Chave privada SSH em base64 |
+| `GH_CLIENT_ID` | Client ID do GitHub OAuth App |
+| `GH_CLIENT_SECRET` | Client Secret do GitHub OAuth App |
+
+---
+
+## Como Executar Localmente
 
 ### Pré-requisitos
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL rodando localmente
+- Docker e Docker Compose instalados
 
-### 1. Banco de Dados
-
-```sql
-CREATE DATABASE empresas_db;
-```
-
-### 2. Backend
+### Subir todos os serviços
 
 ```bash
-cd backend
-
-# Crie e ative o ambiente virtual
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/Mac
-
-# Instale as dependências
-pip install -r requirements.txt
-
-# Configure o banco (copie e edite se necessário)
-copy .env.example .env
-
-# Inicie o servidor (as tabelas são criadas automaticamente)
-uvicorn main:app --reload
+docker compose up --build
 ```
 
-Acesse a documentação interativa em: **http://localhost:8000/docs**
-
-### 3. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Acesse o sistema em: **http://localhost:5173**
+| Serviço | URL |
+|---------|-----|
+| Frontend | http://localhost |
+| Backend API | http://localhost:8000 |
+| Documentação | http://localhost:8000/docs |
 
 ---
 
@@ -108,16 +145,22 @@ Acesse o sistema em: **http://localhost:5173**
 | **Models** | `Empresa`, `Socio` | Mapeamento ORM das tabelas |
 | **Schemas** | `EmpresaCreate`, `EmpresaUpdate`, etc. | Validação Pydantic de entrada/saída |
 | **Utils** | `CnpjValidator` | Algoritmo de validação do CNPJ |
-| **Repository** | `BaseRepository` (abstrata) → `EmpresaRepository`, `SocioRepository` | Acesso ao banco (herança) |
-| **Service** | `EmpresaService`, `SocioService` | Regras de negócio, orquestra repositórios |
-| **Routers** | `APIRouter` (FastAPI) | Endpoints HTTP, injeta serviços via DI |
+| **Repository** | `BaseRepository` → `EmpresaRepository`, `SocioRepository` | Acesso ao banco (herança) |
+| **Service** | `EmpresaService`, `SocioService` | Regras de negócio |
+| **Routers** | `APIRouter` (FastAPI) | Endpoints HTTP |
 | **Config** | `DatabaseConfig`, `Application` | Configuração e montagem da app |
 | **Frontend Services** | `ApiClient` → `EmpresaService`, `SocioService` | Comunicação com a API (herança) |
-| **Frontend Utils** | `CnpjUtil` | Validação e máscara de CNPJ no browser |
 
 ---
 
 ## Endpoints da API
+
+### Autenticação
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/auth/github/login` | Inicia fluxo OAuth com GitHub |
+| `GET` | `/auth/github/callback` | Callback do GitHub OAuth |
+| `GET` | `/auth/github/user` | Retorna dados do usuário autenticado |
 
 ### Empresas
 | Método | Rota | Descrição |
@@ -126,7 +169,7 @@ Acesse o sistema em: **http://localhost:5173**
 | `GET` | `/empresas?busca=termo` | Listar / buscar por nome ou CNPJ |
 | `GET` | `/empresas/{id}` | Buscar por ID (inclui sócios) |
 | `PUT` | `/empresas/{id}` | Atualizar empresa |
-| `DELETE` | `/empresas/{id}` | Remover empresa (cascade sócios) |
+| `DELETE` | `/empresas/{id}` | Remover empresa |
 
 ### Sócios
 | Método | Rota | Descrição |
